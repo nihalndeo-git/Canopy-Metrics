@@ -8,10 +8,40 @@ import os
 import config
 
 # Page configuration
-st.set_page_config(page_title="Plant Canopy Metrics Estimator", layout="wide")
+st.set_page_config(
+    page_title="Plant Canopy Metrics Estimator", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
-# Title
-st.title("🌱 Plant Canopy Metrics Estimator")
+# Custom CSS for better styling
+st.markdown("""
+<style>
+    .main-header {
+        text-align: center;
+        padding: 20px 0;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #2ecc71;
+    }
+    .metric-card {
+        padding: 15px;
+        border-radius: 8px;
+        background: rgba(46, 204, 113, 0.1);
+        border-left: 4px solid #2ecc71;
+        margin: 10px 0;
+    }
+    .stat-highlight {
+        font-size: 1.2em;
+        font-weight: bold;
+        color: #2ecc71;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Title with better styling
+col_title1, col_title2, col_title3 = st.columns([1, 2, 1])
+with col_title2:
+    st.markdown("<div class='main-header'><h1>🌱 Plant Canopy Metrics Estimator</h1></div>", unsafe_allow_html=True)
 
 # Load the model
 @st.cache_resource
@@ -141,12 +171,12 @@ col1, col2 = st.columns([2, 1])
 
 # Sidebar for image selection
 with st.sidebar:
-    st.header("Image Selection")
+    st.header("📷 Image Selection")
     
-    image_source = st.radio("Choose image source:", ["Upload Image", "Select Test Image"])
+    image_source = st.radio("Choose image source:", ["Upload Image", "Select Test Image"], label_visibility="collapsed")
 
     st.divider()
-    st.header("Calibration (px → cm)")
+    st.header("⚖️ Calibration (px → cm)")
     enable_calibration = st.checkbox(
         "Enable real-world units",
         value=bool(getattr(config, "CM_PER_PIXEL", None)),
@@ -214,59 +244,68 @@ with col2:
     st.header("📊 Canopy Metrics")
     
     if annotated_image is not None and metrics_list:
-        st.success(f"✓ Detected {len(metrics_list)} plant(s)")
+        st.markdown(f"<div class='stat-highlight'>✓ Detected {len(metrics_list)} plant(s)</div>", unsafe_allow_html=True)
+        st.markdown("")
         
         # Display metrics for each plant
         for idx, metrics in enumerate(metrics_list, 1):
-            with st.expander(f"Plant {idx}", expanded=(idx == 1)):
+            with st.expander(f"🌿 Plant {idx}", expanded=(idx == 1)):
                 col_m1, col_m2 = st.columns(2)
                 
                 with col_m1:
                     if cm_per_pixel is not None and "height_cm" in metrics:
-                        st.metric("Height", f"{metrics['height_cm']:.2f} cm")
-                        st.metric("Area", f"{metrics['area_cm2']:.2f} cm²")
+                        st.metric("📏 Height", f"{metrics['height_cm']:.2f} cm")
+                        st.metric("📐 Area", f"{metrics['area_cm2']:.2f} cm²")
                     else:
-                        st.metric("Height", f"{metrics['height']} px")
-                        st.metric("Area", f"{metrics['area']} px²")
+                        st.metric("📏 Height", f"{metrics['height']} px")
+                        st.metric("📐 Area", f"{metrics['area']} px²")
                 
                 with col_m2:
                     if cm_per_pixel is not None and "width_cm" in metrics:
-                        st.metric("Width", f"{metrics['width_cm']:.2f} cm")
+                        st.metric("↔️ Width", f"{metrics['width_cm']:.2f} cm")
                     else:
-                        st.metric("Width", f"{metrics['width']} px")
+                        st.metric("↔️ Width", f"{metrics['width']} px")
 
                 if cm_per_pixel is not None and "height_cm" in metrics:
                     st.caption(
-                        f"Pixels: H {metrics['height']} px • "
+                        f"**Pixels:** H {metrics['height']} px • "
                         f"W {metrics['width']} px • "
                         f"A {metrics['area']} px²"
                     )
         
         # Summary statistics
         st.divider()
-        st.subheader("Summary")
+        st.subheader("📈 Summary Statistics")
         
         avg_height = np.mean([m['height'] for m in metrics_list])
         avg_width = np.mean([m['width'] for m in metrics_list])
         avg_area = np.mean([m['area'] for m in metrics_list])
         
         if cm_per_pixel is not None:
-            st.metric("Average Height", f"{(avg_height * cm_per_pixel):.2f} cm")
-            st.metric("Average Width", f"{(avg_width * cm_per_pixel):.2f} cm")
-            st.metric("Average Area", f"{(avg_area * (cm_per_pixel ** 2)):.2f} cm²")
+            col_s1, col_s2, col_s3 = st.columns(3)
+            with col_s1:
+                st.metric("Avg Height", f"{(avg_height * cm_per_pixel):.2f} cm")
+            with col_s2:
+                st.metric("Avg Width", f"{(avg_width * cm_per_pixel):.2f} cm")
+            with col_s3:
+                st.metric("Avg Area", f"{(avg_area * (cm_per_pixel ** 2)):.2f} cm²")
             st.caption(
-                f"Pixels (averages): H {avg_height:.1f} px • "
+                f"**Pixels:** H {avg_height:.1f} px • "
                 f"W {avg_width:.1f} px • "
                 f"A {avg_area:.1f} px²"
             )
         else:
-            st.metric("Average Height", f"{avg_height:.1f} px")
-            st.metric("Average Width", f"{avg_width:.1f} px")
-            st.metric("Average Area", f"{avg_area:.1f} px²")
+            col_s1, col_s2, col_s3 = st.columns(3)
+            with col_s1:
+                st.metric("Avg Height", f"{avg_height:.1f} px")
+            with col_s2:
+                st.metric("Avg Width", f"{avg_width:.1f} px")
+            with col_s3:
+                st.metric("Avg Area", f"{avg_area:.1f} px²")
         
         # Export button
         st.divider()
-        if st.button("📥 Export Metrics as JSON"):
+        if st.button("📥 Export Metrics as JSON", use_container_width=True):
             import json
             export_data = {
                 "num_plants": len(metrics_list),
@@ -283,8 +322,13 @@ with col2:
             st.json(export_data)
     
     else:
-        st.info("Metrics will appear here once an image is processed.")
+        st.info("👈 **Select an image to see metrics here**")
 
 # Footer
 st.divider()
-st.caption("Plant Canopy Metrics Estimator • Powered by YOLOv8 and OpenCV")
+st.markdown(
+    "<p style='text-align: center; color: #888; font-size: 0.85em;'>"
+    "🌱 Plant Canopy Metrics Estimator • Powered by YOLOv8 and OpenCV"
+    "</p>",
+    unsafe_allow_html=True
+)
